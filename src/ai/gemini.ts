@@ -1,0 +1,18 @@
+import { validateCode } from '../animation/codeRuntime';
+
+export const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
+const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
+export interface GeminiRequest { apiKey:string; model:string; prompt:string; signal?:AbortSignal }
+export class GeminiError extends Error { constructor(message:string,public readonly kind:'auth'|'quota'|'network'|'api'|'invalid-response',public readonly status?:number){super(message);this.name='GeminiError'} }
+
+const SYSTEM = `You generate deterministic Motion Studio Canvas 2D frame scripts. Return JavaScript only, without markdown fences or explanation. The script runs once per frame and receives: ctx (CanvasRenderingContext2D), width, height, time (frame/fps), frame, fps, and api with clamp, lerp, easeInOutCubic, alpha, random(index). Draw a complete frame. Scale from width and height. Do not use imports, async, DOM, network, storage, eval, Function, Date, performance, requestAnimationFrame, setTimeout, setInterval, Math.random, external assets, or persistent state. Prefer smooth loops and ensure all code is valid as a function body.`;
+
+export async function generateGeminiAnimation(req:GeminiRequest,fetcher:typeof fetch=fetch):Promise<string>{
+ const apiKey=req.apiKey.trim(),model=req.model.trim();if(!apiKey)throw new GeminiError('Enter a Gemini API key before generating.','auth');if(!model)throw new GeminiError('Choose a Gemini model.','api');if(!req.prompt.trim())throw new GeminiError('Describe the animation you want to create.','api');
+ let response:Response;try{response=await fetcher(`${ENDPOINT}/${encodeURIComponent(model)}:generateContent`,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':apiKey},body:JSON.stringify({system_instruction:{parts:[{text:SYSTEM}]},contents:[{role:'user',parts:[{text:req.prompt.trim()}]}],generationConfig:{temperature:.7,maxOutputTokens:8192,responseMimeType:'text/plain'}}),signal:req.signal})}catch(error){if(error instanceof DOMException&&error.name==='AbortError')throw error;throw new GeminiError('Could not reach Gemini. Check your connection, browser privacy settings, and API endpoint access.','network')}
+ if(!response.ok){let detail='';try{const body=await response.json() as {error?:{message?:string}};detail=body.error?.message?.trim()||''}catch{/* response was not JSON */}const suffix=detail?` ${detail}`:'';if(response.status===401||response.status===403)throw new GeminiError(`Gemini rejected the API key or project permissions.${suffix}`,'auth',response.status);if(response.status===429)throw new GeminiError(`Gemini quota or rate limit was exceeded.${suffix}`,'quota',response.status);throw new GeminiError(`Gemini request failed (${response.status}).${suffix}`,'api',response.status)}
+ let data:unknown;try{data=await response.json()}catch{throw new GeminiError('Gemini returned an unreadable response.','invalid-response',response.status)}
+ const code=extractGeminiText(data).replace(/^```(?:javascript|js)?\s*/i,'').replace(/\s*```$/,'').trim();if(!code)throw new GeminiError('Gemini returned no animation code. Try a more specific prompt.','invalid-response');const errors=validateCode(code);if(errors.length)throw new GeminiError(`Gemini generated code that failed validation: ${errors.join(' ')}`,'invalid-response');return code
+}
+
+export function extractGeminiText(data:unknown):string{if(!data||typeof data!=='object')return'';const d=data as {candidates?:Array<{content?:{parts?:Array<{text?:unknown}>},finishReason?:string}>};return d.candidates?.[0]?.content?.parts?.map(p=>typeof p.text==='string'?p.text:'').join('')||''}
