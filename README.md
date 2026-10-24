@@ -141,7 +141,7 @@ Run `npm run build` and serve `dist/` over HTTPS. No application server is requi
 
 ## Known limitations
 
-Scene-object inspector/layer manipulation, asset import, worker-isolated execution, streaming multi-gigabyte archives, MP4 muxing, audio, AI provider calls, render-history persistence, and fully streamed tile stitching are not implemented. Preview compilation runs dynamic script code in the page after an explicit action; restricted token validation is defense-in-depth, not a complete security boundary. Do not run untrusted scripts. See [docs/SECURITY.md](docs/SECURITY.md).
+SVG/raster asset import, scene layer reordering/grouping, worker-isolated execution, streaming multi-gigabyte archives, MP4 muxing, audio, render-history persistence, and fully streamed tile stitching are not implemented. Basic rectangle, ellipse, star, and text scene objects with transforms, selection, visibility, deletion, and numeric keyframes are implemented and composited into preview and exports. Preview compilation runs dynamic script code in the page after an explicit action; restricted token validation is defense-in-depth, not a complete security boundary. Do not run untrusted scripts. See [docs/SECURITY.md](docs/SECURITY.md).
 
 ## License
 
