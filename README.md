@@ -83,8 +83,8 @@ Draw one complete frame. Do not accumulate state between invocations. See [docs/
 |---|---|---|
 | WebM VP9/VP8 | Capability detected | MediaRecorder + manual frame requests; codec chosen from browser support. |
 | PNG | Canvas 2D browsers | Lossless still at render-range start; alpha supported. |
+| PNG sequence ZIP | Canvas 2D browsers | Every frame is signature/dimension checked; archive includes a JSON manifest and verified central directory. In-memory archive safety limit applies. |
 | MP4/H.264 | Not exposed | Browsers do not reliably provide an MP4 recorder/portable muxer. The UI does not fake it. |
-| PNG sequence archive | Not yet implemented | Use still PNG; a streaming ZIP worker is future work. |
 
 WebM timing uses browser `MediaRecorder`; exact container timing and maximum dimensions remain browser/codec dependent. Output verification checks non-empty retrieval and completed assembly. It does **not** claim bitstream-level validation.
 
@@ -141,7 +141,7 @@ Run `npm run build` and serve `dist/` over HTTPS. No application server is requi
 
 ## Known limitations
 
-Scene-object inspector/layer manipulation, asset import, worker-isolated execution, multi-file PNG sequences, MP4 muxing, audio, AI provider calls, render-history persistence, and fully streamed tile stitching are not implemented. Preview compilation runs dynamic script code in the page after an explicit action; restricted token validation is defense-in-depth, not a complete security boundary. Do not run untrusted scripts. See [docs/SECURITY.md](docs/SECURITY.md).
+Scene-object inspector/layer manipulation, asset import, worker-isolated execution, streaming multi-gigabyte archives, MP4 muxing, audio, AI provider calls, render-history persistence, and fully streamed tile stitching are not implemented. Preview compilation runs dynamic script code in the page after an explicit action; restricted token validation is defense-in-depth, not a complete security boundary. Do not run untrusted scripts. See [docs/SECURITY.md](docs/SECURITY.md).
 
 ## License
 
