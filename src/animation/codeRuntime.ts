@@ -14,6 +14,7 @@ export interface RuntimeApi {
 export interface FrameInput { ctx: CanvasRenderingContext2D; composition: Composition; frame: number; onWarning?: GeometryWarning }
 
 const blocked = /\b(fetch|XMLHttpRequest|WebSocket|EventSource|importScripts|indexedDB|localStorage|sessionStorage|document|window|globalThis|navigator|location|Function|eval)\b/;
+const runtimeArgs = ['ctx','width','height','time','frame','fps','api','clamp','lerp','easeInOutCubic','alpha','random'] as const;
 
 export function validateCode(code: string): string[] {
   const errors: string[] = [];
@@ -21,7 +22,7 @@ export function validateCode(code: string): string[] {
   const match = blocked.exec(code);
   if (match) errors.push(`Restricted global “${match[1]}” is not available in frame scripts.`);
   if (/\b(import|export)\s/.test(code)) errors.push('Imports and exports are not supported in frame scripts.');
-  try { new Function('ctx','width','height','time','frame','fps','api', `'use strict';\n${code}`); } catch (e) { errors.push(e instanceof Error ? e.message : String(e)); }
+  try { new Function(...runtimeArgs, `'use strict';\n${code}`); } catch (e) { errors.push(e instanceof Error ? e.message : String(e)); }
   return errors;
 }
 
@@ -31,7 +32,7 @@ export function validateCode(code: string): string[] {
 export function compileFrame(code: string): (input: FrameInput) => void {
   const errors = validateCode(code);
   if (errors.length) throw new Error(errors.join('\n'));
-  const fn = new Function('ctx','width','height','time','frame','fps','api', `'use strict';\n${code}`) as (...args: unknown[]) => void;
+  const fn = new Function(...runtimeArgs, `'use strict';\n${code}`) as (...args: unknown[]) => void;
   return (input) => {
     const { ctx, composition, frame } = input;
     const seed = composition.seed;
@@ -43,6 +44,7 @@ export function compileFrame(code: string): (input: FrameInput) => void {
       random: (index=0) => { let x=Math.imul(seed+index+frame*374761393,668265263); x=(x^(x>>>13))*1274126177; return ((x^(x>>>16))>>>0)/4294967296; },
     };
     const safeCtx = createSafeCanvasContext(ctx, input.onWarning);
-    fn(safeCtx, composition.width, composition.height, frame / composition.fps, frame, composition.fps, Object.freeze(api));
+    const frozenApi = Object.freeze(api);
+    fn(safeCtx, composition.width, composition.height, frame / composition.fps, frame, composition.fps, frozenApi, frozenApi.clamp, frozenApi.lerp, frozenApi.easeInOutCubic, frozenApi.alpha, frozenApi.random);
   };
 }
