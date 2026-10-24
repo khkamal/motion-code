@@ -1,0 +1,3 @@
+// @vitest-environment node
+import{describe,it,expect}from'vitest';import{crc32,createZip,verifyZip}from'../src/rendering/zip';
+describe('ZIP image sequence assembly',()=>{it('matches a canonical CRC-32 value',()=>{expect(crc32(new TextEncoder().encode('123456789'))).toBe(0xcbf43926)});it('writes central directory with exact entries',async()=>{const zip=createZip([{name:'frames/a.png',data:new Uint8Array([1,2,3])},{name:'manifest.json',data:new TextEncoder().encode('{}')}]);expect(zip.type).toBe('application/zip');expect(await verifyZip(zip,2)).toBe(true);expect(await verifyZip(zip,3)).toBe(false);const sig=new Uint8Array(await zip.slice(0,4).arrayBuffer());expect([...sig]).toEqual([0x50,0x4b,0x03,0x04])})});
