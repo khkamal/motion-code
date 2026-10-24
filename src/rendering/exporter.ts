@@ -1,0 +1,18 @@
+import type { Composition } from '../core/types';
+import { compileFrame } from '../animation/codeRuntime';
+
+export interface ExportProgress { frame:number; total:number; phase:'rendering'|'encoding'|'verifying' }
+export interface ExportResult { blob:Blob; filename:string; mime:string; dimensions:string; fps:number; duration:number; frames:number; verified:boolean; warnings:string[] }
+export interface ExportOptions { composition:Composition; code:string; format:'png'|'webm'; filename:string; onProgress:(p:ExportProgress)=>void; signal:AbortSignal }
+function canvasToBlob(canvas:HTMLCanvasElement,type:string,quality?:number):Promise<Blob>{return new Promise((res,rej)=>canvas.toBlob(b=>b?res(b):rej(new Error('Canvas encoding returned no data.')),type,quality));}
+export async function exportAnimation(o:ExportOptions):Promise<ExportResult>{
+ const {composition:c,signal}=o; const canvas=document.createElement('canvas'); canvas.width=c.width; canvas.height=c.height; const ctx=canvas.getContext('2d',{alpha:true}); if(!ctx)throw new Error('Canvas 2D unavailable.'); const draw=compileFrame(o.code); const total=c.endFrame-c.startFrame;
+ if(o.format==='png') { if(signal.aborted)throw new DOMException('Cancelled','AbortError'); draw({ctx,composition:c,frame:c.startFrame}); o.onProgress({frame:1,total:1,phase:'encoding'}); const blob=await canvasToBlob(canvas,'image/png'); if(!blob.size)throw new Error('Generated PNG is empty.'); return {blob,filename:safe(o.filename,'png'),mime:'image/png',dimensions:`${c.width} × ${c.height}`,fps:c.fps,duration:1/c.fps,frames:1,verified:true,warnings:['Still-frame PNG exports the current render-range start frame.']}; }
+ if(!canvas.captureStream || typeof MediaRecorder==='undefined')throw new Error('WebM export is unavailable in this browser. Use PNG instead.');
+ const supported=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(t=>MediaRecorder.isTypeSupported(t)); if(!supported)throw new Error('No supported WebM codec was found.');
+ const stream=canvas.captureStream(0); const track=stream.getVideoTracks()[0] as MediaStreamTrack & {requestFrame?:()=>void}; const chunks:Blob[]=[]; const recorder=new MediaRecorder(stream,{mimeType:supported,videoBitsPerSecond:Math.min(50_000_000,Math.max(2_000_000,c.width*c.height*c.fps*.08))}); recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)}; const stopped=new Promise<void>((res,rej)=>{recorder.onstop=()=>res();recorder.onerror=()=>rej(new Error('MediaRecorder encoding failed.'));}); recorder.start();
+ for(let i=0;i<total;i++){ if(signal.aborted){recorder.stop();await stopped;throw new DOMException('Cancelled','AbortError');} draw({ctx,composition:c,frame:c.startFrame+i}); track.requestFrame?.(); o.onProgress({frame:i+1,total,phase:'rendering'}); await new Promise(r=>setTimeout(r,Math.max(4,1000/c.fps))); }
+ recorder.stop(); await stopped; stream.getTracks().forEach(t=>t.stop()); o.onProgress({frame:total,total,phase:'verifying'}); const blob=new Blob(chunks,{type:supported}); if(!blob.size)throw new Error('Encoder produced an empty file.'); return {blob,filename:safe(o.filename,'webm'),mime:supported,dimensions:`${c.width} × ${c.height}`,fps:c.fps,duration:total/c.fps,frames:total,verified:true,warnings:[]};
+}
+function safe(name:string,ext:string){const base=(name||'motion').replace(/\.[^.]+$/,'').replace(/[^a-z0-9_-]+/gi,'-').replace(/^-+|-+$/g,'')||'motion';return `${base}.${ext}`}
+export function downloadBlob(blob:Blob,filename:string){const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);}
