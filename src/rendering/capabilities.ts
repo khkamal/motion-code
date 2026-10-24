@@ -14,6 +14,7 @@ const RECORDER_TYPES = [
   'video/webm;codecs=vp8',
   'video/webm',
   'video/mp4;codecs=avc1.42E01E',
+  'video/mp4;codecs=avc1.4D401F',
   'video/mp4',
 ];
 

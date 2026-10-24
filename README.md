@@ -84,9 +84,9 @@ Draw one complete frame. Do not accumulate state between invocations. See [docs/
 | WebM VP9/VP8 | Capability detected | MediaRecorder + manual frame requests; codec chosen from browser support. |
 | PNG | Canvas 2D browsers | Lossless still at render-range start; alpha supported. |
 | PNG sequence ZIP | Canvas 2D browsers | Every frame is signature/dimension checked; archive includes a JSON manifest and verified central directory. In-memory archive safety limit applies. |
-| MP4/H.264 | Not exposed | Browsers do not reliably provide an MP4 recorder/portable muxer. The UI does not fake it. |
+| MP4/H.264 | Capability detected | Shown only when MediaRecorder advertises an explicit AVC/H.264 MP4 MIME type. Output must pass `ftyp`, browser decode, and dimension verification. Otherwise disabled with an explanation. |
 
-WebM timing uses browser `MediaRecorder`; exact container timing and maximum dimensions remain browser/codec dependent. Output verification checks non-empty retrieval and completed assembly. It does **not** claim bitstream-level validation.
+WebM and MP4 timing use browser `MediaRecorder`; exact container timing and maximum dimensions remain browser/codec dependent. MP4 is never synthesized by renaming WebM. Output verification checks non-empty retrieval and completed assembly. It does **not** claim bitstream-level validation.
 
 ## High-resolution status
 
@@ -98,9 +98,9 @@ The editor accepts up to 16384 px per axis and contains a tested tile planner (d
 
 Current Chromium desktop is recommended. Firefox typically supports WebM but lacks manual `requestFrame` in some releases. Safari support depends on its advertised MediaRecorder MIME types. PNG, editing, and IndexedDB are broadly available. Exports require the tab to remain active; browser background throttling can affect long recordings.
 
-## AI provider setup
+## Gemini AI setup
 
-The AI panel is intentionally optional and currently provides configuration guidance rather than a network adapter. No key is bundled. Never place private keys in `VITE_*` variables: Vite exposes them to clients. A future provider adapter should keep a key in session memory by default, explain persistence explicitly, and show code/assets before sending them. Core operation has no AI dependency.
+Gemini is optional. Enter a key in the AI panel, test the connection to load models that advertise `generateContent`, and review generated code before applying it. Keys remain in memory by default. **Save key** explicitly stores the key unencrypted in this browser's `localStorage`; page JavaScript can read it. **Remove** clears both memory and browser storage. Keys are sent only to Google's Gemini API and are never logged or included in project files. See [docs/AI.md](docs/AI.md).
 
 ## Project format
 
@@ -133,15 +133,20 @@ Run `npm run build` and serve `dist/` over HTTPS. No application server is requi
 
 ## Troubleshooting
 
+- **MP4 unavailable:** the browser did not advertise an H.264 MediaRecorder. Use WebM or PNG sequence; renaming WebM is not valid MP4.
 - **WebM unavailable:** choose PNG; the browser did not advertise a supported WebM MediaRecorder codec.
 - **Export is slow:** lower dimensions/fps/duration. Recording intentionally renders each requested frame instead of hiding work.
 - **Canvas is blank:** press Validate and inspect the visible script error.
 - **Project save fails:** private browsing or storage quota may disable IndexedDB; export project JSON immediately.
 - **16K fails:** this is an actual browser/device limit, not silently downscaled. Choose 8K/4K or a supported image workflow.
 
+## Manual browser verification
+
+At 360–400 CSS pixels, open Composition from the stage resolution button; verify ratio/resolution/timing controls scroll without horizontal clipping. Paste `ctx.beginPath(); ctx.arc(width/2,height/2,-5.02425,0,Math.PI*2); ctx.fill();`, press Run, seek, then export PNG/ZIP/video and confirm the visible geometry-correction warning without a crash. Test MP4 only when enabled, then download and play it. Test Save key, reload, Test connection, and Remove.
+
 ## Known limitations
 
-SVG/raster asset import, scene layer reordering/grouping, worker-isolated execution, streaming multi-gigabyte archives, MP4 muxing, audio, render-history persistence, and fully streamed tile stitching are not implemented. Basic rectangle, ellipse, star, and text scene objects with transforms, selection, visibility, deletion, and numeric keyframes are implemented and composited into preview and exports. Preview compilation runs dynamic script code in the page after an explicit action; restricted token validation is defense-in-depth, not a complete security boundary. Do not run untrusted scripts. See [docs/SECURITY.md](docs/SECURITY.md).
+SVG/raster asset import, scene layer reordering/grouping, worker-isolated execution, streaming multi-gigabyte archives, a portable WebCodecs MP4 fallback, audio, render-history persistence, and fully streamed tile stitching are not implemented. Basic rectangle, ellipse, star, and text scene objects with transforms, selection, visibility, deletion, and numeric keyframes are implemented and composited into preview and exports. Preview compilation runs dynamic script code in the page after an explicit action; restricted token validation is defense-in-depth, not a complete security boundary. Do not run untrusted scripts. See [docs/SECURITY.md](docs/SECURITY.md).
 
 ## License
 
