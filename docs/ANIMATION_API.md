@@ -1,6 +1,6 @@
 # Animation API
 
-Frame scripts draw a complete Canvas 2D frame. The runtime passes `ctx`, `width`, `height`, `time`, `frame`, `fps`, and immutable `api`. `time` is exactly `frame / fps`, so direct seeking is deterministic.
+Frame scripts draw a complete Canvas 2D frame. The runtime passes `ctx`, `width`, `height`, `time`, `frame`, `fps`, and immutable `api`. `time` is exactly `frame / fps`, so direct seeking is deterministic. Helpers are available both as `api.clamp(...)`, `api.lerp(...)`, etc. and as direct aliases `clamp(...)`, `lerp(...)`, `easeInOutCubic(...)`, `alpha(...)`, and `random(...)` for compatibility with generated code.
 
 ```js
 ctx.fillStyle = '#101827';
