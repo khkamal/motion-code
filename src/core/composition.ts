@@ -28,6 +28,7 @@ export interface ResolutionPreset {
 }
 
 export const RESOLUTION_PRESETS: ResolutionPreset[] = [
+  { id: '480p', label: 'SD · 480p (854 × 480)', longSide: 854, group: 'hd' },
   { id: '720p', label: 'HD · 720p', longSide: 1280, group: 'hd' },
   { id: '1080p', label: 'Full HD · 1080p', longSide: 1920, group: 'hd' },
   { id: '1440p', label: 'QHD · 1440p', longSide: 2560, group: 'hd' },
