@@ -25,6 +25,15 @@ export interface FrameInput { ctx: CanvasRenderingContext2D; composition: Compos
 
 const blocked = /\b(fetch|XMLHttpRequest|WebSocket|EventSource|importScripts|indexedDB|localStorage|sessionStorage|document|window|globalThis|navigator|location|Function|eval)\b/;
 const runtimeArgs = ['ctx','width','height','time','frame','fps','api','clamp','lerp','easeInOutCubic','alpha','random'] as const;
+const timingAliases = ['durationSeconds','totalFrames','frameDuration','timeSeconds','progress','loopProgress','isFirstFrame','isFinalFrame','composition'] as const;
+
+// Earlier AI prompts described timing names directly, while the runtime exposes
+// them on api to avoid shadowing user variables. Keep those generated scripts
+// working by adding only aliases that are referenced but not locally declared.
+function withTimingCompatibilityAliases(code:string):string {
+  const aliases=timingAliases.filter(name=>new RegExp(`\\b${name}\\b`).test(code)&&!new RegExp(`\\b(?:const|let|var|function)\\s+${name}\\b`).test(code));
+  return aliases.length?`const { ${aliases.join(', ')} } = api;\n${code}`:code;
+}
 
 export function validateCode(code: string): string[] {
   const errors: string[] = [];
@@ -32,7 +41,7 @@ export function validateCode(code: string): string[] {
   const match = blocked.exec(code);
   if (match) errors.push(`Restricted global “${match[1]}” is not available in frame scripts.`);
   if (/\b(import|export)\s/.test(code)) errors.push('Imports and exports are not supported in frame scripts.');
-  try { new Function(...runtimeArgs, `'use strict';\n${code}`); } catch (e) { errors.push(e instanceof Error ? e.message : String(e)); }
+  try { new Function(...runtimeArgs, `'use strict';\n${withTimingCompatibilityAliases(code)}`); } catch (e) { errors.push(e instanceof Error ? e.message : String(e)); }
   return errors;
 }
 
@@ -42,7 +51,7 @@ export function validateCode(code: string): string[] {
 export function compileFrame(code: string): (input: FrameInput) => void {
   const errors = validateCode(code);
   if (errors.length) throw new Error(errors.join('\n'));
-  const fn = new Function(...runtimeArgs, `'use strict';\n${code}`) as (...args: unknown[]) => void;
+  const fn = new Function(...runtimeArgs, `'use strict';\n${withTimingCompatibilityAliases(code)}`) as (...args: unknown[]) => void;
   return (input) => {
     const { ctx, composition, frame } = input;
     const seed = composition.seed;
