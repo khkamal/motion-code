@@ -1,6 +1,6 @@
 # Gemini AI generation
 
-The AI panel calls Google's Gemini `v1beta/models/{model}:generateContent` endpoint directly from the browser. The default model is `gemini-2.5-flash`, and the model field is editable for accounts with different model access.
+The AI panel calls Google's Gemini `v1beta/models/{model}:generateContent` endpoint directly from the browser. The default model is `gemini-3.1-flash-lite`, and the model field is editable for accounts with different model access.
 
 ## Privacy and keys
 

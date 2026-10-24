@@ -1,6 +1,6 @@
 import { validateCode } from '../animation/codeRuntime';
 
-export const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
+export const DEFAULT_GEMINI_MODEL = 'gemini-3.1-flash-lite';
 const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
 export interface GeminiRequest { apiKey:string; model:string; prompt:string; signal?:AbortSignal }
 export class GeminiError extends Error { constructor(message:string,public readonly kind:'auth'|'quota'|'network'|'api'|'invalid-response',public readonly status?:number){super(message);this.name='GeminiError'} }
