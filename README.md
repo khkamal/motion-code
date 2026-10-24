@@ -151,3 +151,11 @@ SVG/raster asset import, scene layer reordering/grouping, worker-isolated execut
 ## License
 
 MIT. Runtime dependencies are React and React DOM (MIT); build/test tools retain their own licenses.
+
+## Deterministic timing and independent export
+
+Frame scripts receive deterministic timing through `api`: `durationSeconds`, `totalFrames`, `frameDuration`, `timeSeconds`, exclusive-end `progress`, endpoint-inclusive `loopProgress`, endpoint flags, and an immutable composition snapshot. Export settings derive a temporary composition for independent resolution, aspect, FPS, duration, quality, and bitrate without changing the project.
+
+Gemini requests include structured composition timing, dimensions, loop/end-state intent, and scene keyframe markers. The editor warns when applied AI code predates composition changes.
+
+Video encoding remains dependent on browser MediaRecorder codecs. PNG sequence ZIP creation is currently memory-buffered; use shorter or lower-resolution sequences on constrained devices. API keys are browser-local and are not secure secrets when persisted in localStorage.

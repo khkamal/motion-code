@@ -197,6 +197,7 @@ export interface Project {
   assets: AssetMeta[];
   versions: CodeVersion[];
   notes: string;
+  aiGeneration?: { prompt:string; compositionSignature:string; generatedAt:number };
 }
 
 export const DEFAULT_COMPOSITION: Composition = {

@@ -1,9 +1,19 @@
 import type { Composition } from '../core/types';
 import { createSafeCanvasContext, type GeometryWarning } from './safeCanvas';
+import { timingAtFrame } from '../core/timing';
 
 export const DEFAULT_CODE = `// Motion Studio frame script\n// Use ctx, width, height, time, frame, fps and api. No DOM or network access.\nconst t = (time % 5) / 5;\nconst ease = api.easeInOutCubic(t < .5 ? t * 2 : (1 - t) * 2);\n\nctx.fillStyle = '#090b16';\nctx.fillRect(0, 0, width, height);\n\n// orbital rings\nctx.save();\nctx.translate(width / 2, height / 2);\nctx.rotate(time * .35);\nfor (let i = 0; i < 5; i++) {\n  ctx.beginPath();\n  ctx.strokeStyle = api.alpha(i % 2 ? '#8b5cf6' : '#22d3ee', .25 + i * .12);\n  ctx.lineWidth = Math.max(2, width / 500);\n  ctx.ellipse(0, 0, width * (.08 + i * .035), height * (.14 + i * .025), i * .35, 0, Math.PI * 2);\n  ctx.stroke();\n}\nctx.restore();\n\nconst pulse = .86 + Math.sin(time * Math.PI * 2 / 2.5) * .08;\nctx.save();\nctx.translate(width / 2, height / 2);\nctx.scale(pulse, pulse);\nctx.shadowColor = '#22d3ee';\nctx.shadowBlur = width * .035;\nconst g = ctx.createLinearGradient(-width*.12, -height*.1, width*.12, height*.1);\ng.addColorStop(0, '#22d3ee');\ng.addColorStop(1, '#8b5cf6');\nctx.fillStyle = g;\nctx.beginPath();\nfor (let i = 0; i < 6; i++) {\n  const a = i * Math.PI / 3 - Math.PI / 2;\n  const r = Math.min(width, height) * .13;\n  const x = Math.cos(a) * r, y = Math.sin(a) * r;\n  i ? ctx.lineTo(x,y) : ctx.moveTo(x,y);\n}\nctx.closePath(); ctx.fill();\nctx.restore();\n\nctx.textAlign = 'center';\nctx.textBaseline = 'middle';\nctx.fillStyle = '#f8fafc';\nctx.font = '700 ' + Math.round(Math.min(width,height)*.075) + 'px system-ui';\nctx.fillText('MOTION', width/2, height*.76);\nctx.fillStyle = '#94a3b8';\nctx.font = '500 ' + Math.round(Math.min(width,height)*.025) + 'px system-ui';\nctx.fillText('CREATE · ANIMATE · EXPORT', width/2, height*.83);`;
 
 export interface RuntimeApi {
+  readonly durationSeconds:number;
+  readonly totalFrames:number;
+  readonly frameDuration:number;
+  readonly timeSeconds:number;
+  readonly progress:number;
+  readonly loopProgress:number;
+  readonly isFirstFrame:boolean;
+  readonly isFinalFrame:boolean;
+  readonly composition:Readonly<Composition>;
   clamp(v: number, min?: number, max?: number): number;
   lerp(a: number, b: number, t: number): number;
   easeInOutCubic(t: number): number;
@@ -36,7 +46,9 @@ export function compileFrame(code: string): (input: FrameInput) => void {
   return (input) => {
     const { ctx, composition, frame } = input;
     const seed = composition.seed;
+    const timing=timingAtFrame(composition,frame);
     const api: RuntimeApi = {
+      durationSeconds:timing.durationSeconds,totalFrames:timing.totalFrames,frameDuration:timing.frameDuration,timeSeconds:timing.timeSeconds,progress:timing.progress,loopProgress:timing.loopProgress,isFirstFrame:timing.isFirstFrame,isFinalFrame:timing.isFinalFrame,composition:Object.freeze({...composition}),
       clamp: (v,min=0,max=1) => Math.min(max,Math.max(min,v)),
       lerp: (a,b,t) => a+(b-a)*t,
       easeInOutCubic: (t) => t < .5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2,
@@ -45,6 +57,6 @@ export function compileFrame(code: string): (input: FrameInput) => void {
     };
     const safeCtx = createSafeCanvasContext(ctx, input.onWarning);
     const frozenApi = Object.freeze(api);
-    fn(safeCtx, composition.width, composition.height, frame / composition.fps, frame, composition.fps, frozenApi, frozenApi.clamp, frozenApi.lerp, frozenApi.easeInOutCubic, frozenApi.alpha, frozenApi.random);
+    fn(safeCtx, composition.width, composition.height, timing.timeSeconds, timing.frame, composition.fps, frozenApi, frozenApi.clamp, frozenApi.lerp, frozenApi.easeInOutCubic, frozenApi.alpha, frozenApi.random);
   };
 }
