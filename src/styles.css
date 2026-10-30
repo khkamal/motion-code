@@ -27,3 +27,23 @@
  .timeline{height:104px;grid-template-rows:42px 1fr}.leftpanel{top:92px;bottom:104px}.toast{bottom:calc(114px + env(safe-area-inset-bottom))}
 }
 @media(max-width:390px){.stagebar button:not(.green-screen){display:none}.stagebar strong{margin-left:auto}.center{grid-template-rows:44px minmax(82px,1fr) minmax(160px,42vh)}}
+
+/* Compact portrait workspace: the 3:2 canvas owns exactly its aspect box and
+   the remaining height belongs to the code editor—no decorative stage gutter. */
+@media(max-width:650px) and (orientation:portrait){
+ .app{grid-template-rows:48px minmax(0,1fr) 48px}
+ .center{grid-template-rows:44px auto minmax(180px,1fr);align-content:stretch}
+ .stage{display:block;width:100%;height:auto;aspect-ratio:3 / 2;padding:0;background:#050607;overflow:hidden}
+ .canvas-shell{width:100%!important;height:100%!important;max-width:none;max-height:none;aspect-ratio:3 / 2!important;box-shadow:none}
+ .canvas-shell canvas{width:100%;height:100%;object-fit:fill}
+ .resolution-badge{right:7px;bottom:6px;padding:3px 6px;border-radius:4px;color:#d4d8e2;background:#06070aa8;pointer-events:none}
+ .codepanel{grid-row:3;min-height:180px;height:100%;border-top:1px solid var(--line2)}
+ .panelhead b::after{content:' · Paste code below';color:var(--muted);font-weight:400}
+ .timeline{height:48px;grid-template-rows:48px;padding-bottom:env(safe-area-inset-bottom)}
+ .timeline .tracks{display:none}.transport{min-width:0}.transport span{display:none}
+ .leftpanel{bottom:48px}.toast{bottom:calc(58px + env(safe-area-inset-bottom))}
+}
+@media(max-width:390px) and (orientation:portrait){
+ .center{grid-template-rows:44px auto minmax(170px,1fr)}
+ .codepanel{min-height:170px}
+}
