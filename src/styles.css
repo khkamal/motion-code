@@ -16,3 +16,4 @@
  .timeline{padding-bottom:env(safe-area-inset-bottom)}.toast{bottom:calc(136px + env(safe-area-inset-bottom));max-width:calc(100vw - 24px);text-align:center}
 }
 @media(max-width:390px){.topbar .btn{min-width:36px}.stagebar{gap:9px}.tracks{grid-template-columns:88px 1fr}.track-name{padding-left:7px;padding-right:7px}.resolution-badge{font-size:8px}}
+.stagebar .green-screen{border:1px solid var(--line);border-radius:5px;padding:4px 7px}.stagebar .green-screen.active{color:#071b07;background:#00ff00;border-color:#63ff63;font-weight:800}
