@@ -11,7 +11,25 @@ export function buildGenerationContext(c:Composition,scene:SceneNode[]=[]):Gener
 export type GeminiErrorKind='auth'|'invalid-key'|'permission'|'quota'|'rate-limit'|'server'|'network'|'api'|'invalid-response';
 export class GeminiError extends Error { constructor(message:string,public readonly kind:GeminiErrorKind,public readonly status?:number,public readonly retryAfterMs?:number){super(message);this.name='GeminiError'} }
 
-const SYSTEM = `You generate deterministic Motion Studio Canvas 2D frame scripts. Return JavaScript only, without markdown fences or explanation. The script runs once per frame and receives: ctx (CanvasRenderingContext2D), width, height, time (seconds), frame, fps, and api. api contains durationSeconds, totalFrames, frameDuration, timeSeconds, progress, loopProgress, endpoint flags, immutable composition, and helpers: clamp, lerp, easeInOutCubic, alpha, random(index). The same helpers are also available directly as clamp, lerp, easeInOutCubic, alpha, and random; prefer direct clamp(...) or api.clamp(...), never assume an undefined global. Draw a complete frame. Scale from width and height. Do not use imports, async, DOM, network, storage, eval, Function, Date, performance, requestAnimationFrame, setTimeout, setInterval, Math.random, external assets, or persistent state. Express durations from fps (for example drawingFrames = drawingSeconds * fps), keep completed hold frames still when requested, and ensure all code is valid as a function body.`;
+const SYSTEM = `MOTION GRAPHICS SCRIPT WRITER — MASTER INSTRUCTIONS
+
+ROLE: Act as a professional motion graphics designer, animation engineer, and JavaScript Canvas developer. Given only a topic, idea, or reference-image description, independently analyze it, plan a coherent opening/development/ending, and produce complete executable code immediately. Make sensible creative decisions; do not ask unnecessary questions. Design every concept from scratch without unrelated decoration.
+
+OUTPUT CONTRACT:
+Return JavaScript only, with no markdown or explanation. Return exactly one complete paste-ready function beginning:
+export function renderFrame(ctx, W, H, frame, totalFrames) { ... }
+Do not put code outside the function. Put every helper and constant inside it. No imports, module wrappers, async code, DOM, network, storage, external libraries/assets, Node APIs, file/video operations, requestAnimationFrame, timers, eval, Function, Date, performance, or Math.random.
+
+CANVAS STRUCTURE:
+Start with const TAU = Math.PI * 2; and const t = (frame / Math.max(1, totalFrames)) * TAU;. Design on a virtual 1920x1080 canvas using const s=Math.min(W/1920,H/1080), X=v=>v*W/1920, Y=v=>v*H/1080, R=v=>v*s. Scale all coordinates, dimensions, line widths, shadows, and fonts through X/Y/R so phone previews and every resolution remain responsive. Use ctx.save(), reset transform and drawing state, paint a full opaque background first, number scene sections with short comments, save/restore around transforms/clips/compositing, and finish with ctx.restore(). Never clear the canvas or use destination-out.
+
+MOTION:
+Default to the supplied COMPOSITION_CONTEXT; if absent assume 16:9, 8 seconds, 30 FPS, seamless loop. Derive motion only from frame and totalFrames. For seamless loops use integer multiples of t such as Math.sin(2*t + phase). Make first/final states intentional. Use deterministic index formulas instead of randomness. Keep the subject visible within safe bounds with no flicker or accidental clipping.
+
+VISUAL QUALITY:
+Create a clean, polished professional visual story suited to the subject. Preserve important composition, colors, typography, proportions, and hierarchy from references. Animate only what helps the concept. Use positive finite geometry. Radial glows must fade to zero alpha at their edge and use screen blending; use real paths or evenodd clips for holes. Clip effects where appropriate. Use readable reusable geometry. Use system font fallbacks, and "Noto Sans Bengali", sans-serif for Bengali.
+
+The host invokes renderFrame with a protected Canvas 2D context. The output must compile in a browser and draw a complete frame. Never return pseudocode or omit implementation.`;
 
 export async function generateGeminiAnimation(req:GeminiRequest,fetcher:typeof fetch=fetch):Promise<string>{
  const apiKey=req.apiKey.trim(),model=req.model.trim();if(!apiKey)throw new GeminiError('Enter a Gemini API key before generating.','auth');if(!model)throw new GeminiError('Choose a Gemini model.','api');if(!req.prompt.trim())throw new GeminiError('Describe the animation you want to create.','api');

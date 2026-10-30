@@ -35,13 +35,23 @@ function withTimingCompatibilityAliases(code:string):string {
   return aliases.length?`const { ${aliases.join(', ')} } = api;\n${code}`:code;
 }
 
+/** Accept both the original frame-body format and portable Motion Preview functions. */
+export function normalizeFrameSource(code:string):string {
+  const normalized=code.replace(/^\s*export\s+(?=function\s+renderFrame\b)/m,'').trim();
+  if(/\bfunction\s+renderFrame\s*\(/.test(normalized))return `${normalized}\nrenderFrame(ctx, width, height, frame, api.totalFrames);`;
+  return normalized;
+}
+
+function executableSource(code:string):string{return withTimingCompatibilityAliases(normalizeFrameSource(code))}
+
 export function validateCode(code: string): string[] {
   const errors: string[] = [];
   if (code.length > 100_000) errors.push('Script exceeds the 100 KB execution limit.');
   const match = blocked.exec(code);
   if (match) errors.push(`Restricted global “${match[1]}” is not available in frame scripts.`);
-  if (/\b(import|export)\s/.test(code)) errors.push('Imports and exports are not supported in frame scripts.');
-  try { new Function(...runtimeArgs, `'use strict';\n${withTimingCompatibilityAliases(code)}`); } catch (e) { errors.push(e instanceof Error ? e.message : String(e)); }
+  const source=normalizeFrameSource(code);
+  if (/\b(import|export)\s/.test(source)) errors.push('Imports and additional exports are not supported in frame scripts.');
+  try { new Function(...runtimeArgs, `'use strict';\n${executableSource(code)}`); } catch (e) { errors.push(e instanceof Error ? e.message : String(e)); }
   return errors;
 }
 
@@ -51,7 +61,8 @@ export function validateCode(code: string): string[] {
 export function compileFrame(code: string): (input: FrameInput) => void {
   const errors = validateCode(code);
   if (errors.length) throw new Error(errors.join('\n'));
-  const fn = new Function(...runtimeArgs, `'use strict';\n${withTimingCompatibilityAliases(code)}`) as (...args: unknown[]) => void;
+  // User code runs via new Function. Only run code you wrote or trust.
+  const fn = new Function(...runtimeArgs, `'use strict';\n${executableSource(code)}`) as (...args: unknown[]) => void;
   return (input) => {
     const { ctx, composition, frame } = input;
     const seed = composition.seed;
